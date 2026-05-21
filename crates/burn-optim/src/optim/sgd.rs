@@ -2,6 +2,7 @@ use burn_core as burn;
 
 use super::SimpleOptimizer;
 use super::adaptor::OptimizerAdaptor;
+use super::Optimizer;
 use super::decay::{WeightDecay, WeightDecayConfig};
 use super::momentum::{Momentum, MomentumConfig, MomentumState};
 use crate::LearningRate;
@@ -48,8 +49,8 @@ impl SgdConfig {
         }
     }
 
-    /// Creates a new [SgdConfig](SgdConfig) with default values.
-    pub fn init<M: AutodiffModule>(&self) -> OptimizerAdaptor<Sgd, M> {
+    /// Initializes the SGD optimizer from the configuration.
+    pub fn init<M: AutodiffModule>(&self) -> impl Optimizer<M> {
         let mut optim = OptimizerAdaptor::from(self.build());
         if let Some(config) = &self.gradient_clipping {
             optim = optim.with_grad_clipping(config.init());
@@ -165,15 +166,17 @@ mod tests {
     }
 
     fn sgd_with_all() -> OptimizerAdaptor<Sgd, Linear> {
-        SgdConfig {
-            weight_decay: Some(WeightDecayConfig { penalty: 0.05 }),
-            momentum: Some(MomentumConfig {
-                momentum: 0.9,
-                dampening: 0.1,
-                nesterov: true,
-            }),
-            gradient_clipping: None,
-        }
-        .init()
+        OptimizerAdaptor::from(
+            SgdConfig {
+                weight_decay: Some(WeightDecayConfig { penalty: 0.05 }),
+                momentum: Some(MomentumConfig {
+                    momentum: 0.9,
+                    dampening: 0.1,
+                    nesterov: true,
+                }),
+                gradient_clipping: None,
+            }
+            .build(),
+        )
     }
 }
